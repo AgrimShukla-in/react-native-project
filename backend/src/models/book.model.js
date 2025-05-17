@@ -9,7 +9,7 @@ const bookSchema = new mongoose.Schema({
     category: { type: String, required: true },
     imagePublicId: { type: String },
     
-    uaer: {
+    user: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
         required: true,

@@ -1,9 +1,10 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_BASE = 'https://e785-59-183-74-134.ngrok-free.app/api/v1';
+const API_BASE = 'https://arriving-nice-ant.ngrok-free.app/api/v1';
 
 export const useAuthStore = create((set) => ({
+  uri:API_BASE,
   user: null,
   token: null,
   loading: false,

@@ -1,44 +1,52 @@
 import { Book } from "../models/book.model.js";
 import { uploadOnCloudinary, deleteFromCloudinary } from '../utils/cloudinary.js'
+import User from "../models/user.model.js";
 
 
 
 const createBook = async (req, res) => {
-    try {
-        const { title, caption, Image, rating, category } = req.body;
-
-        if (!title || !caption || !Image || !rating) {
-            return res.status(400).json({ message: "All fields are required" });
-        }
-
-        const imageLocalPath = req.file?.path;
-
-        if (!imageLocalPath) {
-            return res.status(400).json({ message: "Image is required" });
-        }
-
-        const uploadedImage = await uploadOnCloudinary(imageLocalPath);
-        if (!uploadedImage?.secure_url) {
-            throw new ApiError(500, "Failed to upload avatar");
-        }
-
-        const book = await Book.create({
-            title,
-            caption,
-            Image: uploadedImage?.secure_url,
-            rating,
-            category,
-            user: req.user._id,
-            imagePublicId: uploadedImage?.public_id,
-        });
-
-        res.status(201).json({ message: "Book created successfully", book });
-
-    } catch (error) {
-        console.error("Error creating book:", error);
-        res.status(500).json({ message: "Internal server error" });
+  try {
+    const { title, caption, rating, category } = req.body;
+    if (!title || !caption || !rating || !category) {
+      return res.status(400).json({ message: "All fields are required" });
     }
-}
+
+    const reqUser = req.user;         // ← no await
+    console.log("authenticated user:", reqUser);
+
+    const user = await User.findById(reqUser._id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    console.log("received file:", req.file);
+    if (!req.file?.path) {
+      return res.status(400).json({ message: "Image is required" });
+    }
+
+    // uploadOnCloudinary should take a local path
+    const uploadedImage = await uploadOnCloudinary(req.file.path);
+    if (!uploadedImage?.secure_url) {
+      return res.status(500).json({ message: "Image upload failed" });
+    }
+
+    const book = await Book.create({
+      title,
+      caption,
+      Image: uploadedImage.secure_url,
+      rating,
+      category,
+      user: user._id,
+      imagePublicId: uploadedImage.public_id,
+    });
+
+    return res.status(201).json({ success: true, message: "Book created", book });
+  } catch (error) {
+    console.error("Error creating book:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 
 
 const getAllBooks = async (req, res) => {
