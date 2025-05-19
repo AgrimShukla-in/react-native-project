@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_BASE = 'https://arriving-nice-ant.ngrok-free.app/api/v1';
+const API_BASE = 'https://f570-59-89-133-191.ngrok-free.app/api/v1';
 
 export const useAuthStore = create((set) => ({
   uri:API_BASE,
@@ -18,6 +18,7 @@ export const useAuthStore = create((set) => ({
         body: JSON.stringify({ username, email, password }),
       });
       const data = await response.json();
+
       if (!response.ok) throw new Error(data.message);
 
       await AsyncStorage.setItem('otpEmail', email);
@@ -85,6 +86,7 @@ export const useAuthStore = create((set) => ({
   checkAuth: async () => {
     set({ loading: true });
     try {
+
       const result = await AsyncStorage.multiGet(['accessToken', 'refreshToken', 'user']);
       const accessToken = result[0][1];
       const refreshToken = result[1][1];
@@ -95,6 +97,7 @@ export const useAuthStore = create((set) => ({
         return { success: true };
       }
 
+
       if (refreshToken) {
         const response = await fetch(`${API_BASE}/auth/refresh`, {
           method: 'POST',
@@ -104,6 +107,8 @@ export const useAuthStore = create((set) => ({
 
         const data = await response.json();
         if (!response.ok) throw new Error(data.message);
+
+
 
         await AsyncStorage.setItem('accessToken', data.accessToken);
         await AsyncStorage.setItem('user', JSON.stringify(data.user));
@@ -124,14 +129,17 @@ export const useAuthStore = create((set) => ({
 
   login: async (email, password) => {
     set({ loading: true });
+    console.log(email, password);
     try {
       const response = await fetch(`${API_BASE}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
+      console.log(response);
       const data = await response.json();
       if (!response.ok) throw new Error(data.message);
+      console.log(data);
 
       await AsyncStorage.multiSet([
         ['accessToken', data.accessToken],
@@ -147,6 +155,15 @@ export const useAuthStore = create((set) => ({
       set({ loading: false });
     }
   },
+
+  logout: async () => {
+  console.log('User logged out');
+    await AsyncStorage.multiRemove(['accessToken', 'refreshToken', 'user']);
+set({ user: null, token: null, loading: false });
+console.log(token)
+
+  }
+
 
 
 }));

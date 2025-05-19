@@ -9,6 +9,7 @@ import { Image } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuthStore } from '../../store/authStore';
 
+
 export default function Create() {
   const [title, setTitle] = useState('');
   const [caption, setCaption] = useState('');

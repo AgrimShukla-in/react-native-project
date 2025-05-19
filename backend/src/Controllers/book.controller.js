@@ -51,6 +51,7 @@ const createBook = async (req, res) => {
 
 const getAllBooks = async (req, res) => {
     try {
+
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
         const skip = (page - 1) * limit;
@@ -69,13 +70,14 @@ const getAllBooks = async (req, res) => {
             query = query.where('title').regex(new RegExp(search, 'i'));
             // Optionally, extend to search caption too:
             query.or([{ title: new RegExp(search, 'i') }, { caption: new RegExp(search, 'i') }]);
-        }
+        } 
+        console.log("heloo i am chekin you ");
 
         const books = await query
             .sort({ [sortBy]: sortOrder === 'asc' ? 1 : -1 })
             .skip(skip)
             .limit(limit)
-            .populate("uaer", "username prfileImage");
+            .populate("user", "username profileImage");
 
         const totalBooks = await Book.countDocuments(query.getQuery());
 
@@ -96,7 +98,7 @@ const getSingleBook = async (req, res) => {
     try {
 
 
-        const book = await Book.findById(req.params.id).select("-password", "-refreshToken");
+        const book = await Book.findById(req.params.id)
         if (!book) {
             return res.status(404).json({ message: "Book not found" });
         }
@@ -154,37 +156,50 @@ const updateBook = async (req, res) => {
 };
 
 const deleteBook = async (req, res) => {
-    try {
-        const user = req.user._id;
-        const book = await Book.findById(req.params.id);
-
-        if (book.user.toString() !== user.toString()) {
-            return res.status(401).json({ message: "Unauthorized" });
-        }
-
-        // Delete image from Cloudinary
-        if (book.imagePublicId) {
-            await deleteFromCloudinary(book.imagePublicId);
-        }
-
-        await book.remove();
-        res.status(200).json({ message: "Book deleted successfully" });
-    } catch (error) {
-        console.error("Error deleting book:", error);
-        res.status(500).json({ message: "Internal server error" });
+  try {
+    const userId = req.user._id;
+    const book = await Book.findById(req.params.id);
+    if (!book) {
+      return res.status(404).json({ message: "Book not found" });
     }
+    if (book.user.toString() !== userId.toString()) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+
+    // If you’re storing the Cloudinary public ID on `book.imagePublicId`:
+    if (book.imagePublicId) {
+      await deleteFromCloudinary(book.imagePublicId);
+    }
+
+    // ← Use deleteOne() instead of remove()
+    await book.deleteOne();
+
+    return res.status(200).json({ message: "Book deleted successfully" });
+  } catch (err) {
+    console.error("Error deleting book:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
 };
 
-const yourBooks=async(req,res)=>{
-    try {
-        const user = req.user._id;
-        const books = await Book.find({user:user}).sort({ createdAt: -1 });
-        res.status(200).json({ message: "Your books fetched successfully", books });
-    } catch (error) {
-        console.error("Error getting your books:", error);
-        res.status(500).json({ message: "Internal server error" });
-    }
-}
+
+const yourBooks = async (req, res) => {
+  
+  try {
+    const userId = req.user._id;
+    const books = await Book.find({ user: userId })
+      .sort({ createdAt: -1 }) // latest first
+// only needed fields
+
+    return res.status(200).json({
+      message: "All your books fetched successfully",
+      books,
+    });
+  } catch (error) {
+    console.error("Error getting your books:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 
 
 export { createBook, getAllBooks,yourBooks, getSingleBook, updateBook, deleteBook };

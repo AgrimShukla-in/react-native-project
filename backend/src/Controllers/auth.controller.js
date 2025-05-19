@@ -212,7 +212,7 @@ export const refresh = async (req, res) => {
   if (!refreshToken) {
     return res.status(400).json({ message: "Refresh token is required" });
   }
-
+console.log(refreshToken)
   try {
    const user = await User.findOne({refreshToken: refreshToken }).select("-password -refreshToken") ;
 
